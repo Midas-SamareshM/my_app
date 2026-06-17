@@ -1,0 +1,22 @@
+{
+  "env": {
+    "GH_CONFIG_DIR": "C:\\xampp\\htdocs\\my_app\\.gh-config",
+    "GH": "C:\\xampp\\htdocs\\my_app\\.tools\\gh\\bin\\gh.exe"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit*)",
+            "shell": "powershell",
+            "command": "Write-Host '==> Commit detected. Post-commit hook will push and open PR automatically. Run /code-review inside Claude Code to review the PR.'",
+            "statusMessage": "Commit hook reminder..."
+          }
+        ]
+      }
+    ]
+  }
+}
