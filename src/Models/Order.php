@@ -99,17 +99,65 @@ class Order extends BaseModel
     }
 
     /**
-     * Return all orders with buyer names, newest first.
+     * Return all orders with buyer names, newest first, optionally filtered by status.
+     *
+     * @param  string|null  $statusFilter  One of the ALLOWED_STATUSES, or null for all.
      *
      * @return array<int, array<string, mixed>>
      */
-    public function getAllWithUsers(): array
+    public function getAllWithUsers(?string $statusFilter = null): array
     {
+        if ($statusFilter !== null) {
+            return $this->query(
+                'SELECT o.*, u.full_name, u.email_address
+                 FROM orders o
+                 JOIN users u ON u.id = o.user_id
+                 WHERE o.status = ?
+                 ORDER BY o.created_at DESC',
+                [$statusFilter]
+            );
+        }
+
         return $this->query(
             'SELECT o.*, u.full_name, u.email_address
              FROM orders o
              JOIN users u ON u.id = o.user_id
              ORDER BY o.created_at DESC'
+        );
+    }
+
+    /**
+     * Return order count grouped by status for the admin dashboard.
+     *
+     * @return array<string, int>  Map of status => count.
+     */
+    public function countsByStatus(): array
+    {
+        $rows   = $this->query('SELECT status, COUNT(*) AS total FROM orders GROUP BY status');
+        $counts = [];
+
+        foreach ($rows as $row) {
+            $counts[$row['status']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Return a single order with the buyer's name and email.
+     *
+     * @param  int  $orderId  Order primary key.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findWithUser(int $orderId): ?array
+    {
+        return $this->queryOne(
+            'SELECT o.*, u.full_name, u.email_address, u.phone_number
+             FROM orders o
+             JOIN users u ON u.id = o.user_id
+             WHERE o.id = ?',
+            [$orderId]
         );
     }
 
@@ -131,16 +179,25 @@ class Order extends BaseModel
         );
     }
 
+    /** Allowed order status values. */
+    public const ALLOWED_STATUSES = ['ordered', 'processed', 'dispatched', 'delivered', 'cancelled'];
+
     /**
      * Update the fulfillment status of an order.
      *
      * @param  int     $orderId    Order primary key.
-     * @param  string  $newStatus  One of: pending | confirmed | shipped | delivered | cancelled.
+     * @param  string  $newStatus  One of ALLOWED_STATUSES.
      *
      * @return bool  True on success.
+     *
+     * @throws \InvalidArgumentException  If the status value is not recognised.
      */
     public function updateStatus(int $orderId, string $newStatus): bool
     {
+        if (!in_array($newStatus, self::ALLOWED_STATUSES, true)) {
+            throw new \InvalidArgumentException("Invalid order status: {$newStatus}");
+        }
+
         return $this->update($orderId, ['status' => $newStatus]);
     }
 }

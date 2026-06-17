@@ -67,6 +67,10 @@ $router->get('/admin/categories',                    [AdminController::class, 'l
 $router->post('/admin/categories/create',            [AdminController::class, 'createCategory']);
 $router->post('/admin/categories/{categoryId}/delete', [AdminController::class, 'deleteCategory']);
 
+$router->get('/admin/orders',                            [AdminController::class, 'listOrders']);
+$router->get('/admin/orders/{orderId}',                  [AdminController::class, 'viewOrder']);
+$router->post('/admin/orders/{orderId}/status',          [AdminController::class, 'updateOrderStatus']);
+
 $router->get('/admin/products',                      [AdminController::class, 'listProducts']);
 $router->get('/admin/products/create',               [AdminController::class, 'showCreateProduct']);
 $router->post('/admin/products/create',              [AdminController::class, 'createProduct']);

@@ -31,6 +31,7 @@
                             <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Admin</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="<?= url('/admin/dashboard') ?>">Dashboard</a></li>
+                                <li><a class="dropdown-item" href="<?= url('/admin/orders') ?>">Orders</a></li>
                                 <li><a class="dropdown-item" href="<?= url('/admin/users') ?>">Users</a></li>
                                 <li><a class="dropdown-item" href="<?= url('/admin/categories') ?>">Categories</a></li>
                                 <li><a class="dropdown-item" href="<?= url('/admin/products') ?>">Products</a></li>

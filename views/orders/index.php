@@ -1,3 +1,21 @@
+<?php
+$statusBadge = static fn(string $s): string => match($s) {
+    'dispatched' => 'info',
+    'delivered'  => 'success',
+    'processed'  => 'primary',
+    'cancelled'  => 'danger',
+    default      => 'secondary',
+};
+$statusLabel = static fn(string $s): string => match($s) {
+    'ordered'    => 'Ordered',
+    'processed'  => 'Processed',
+    'dispatched' => 'Dispatched',
+    'delivered'  => 'Delivered',
+    'cancelled'  => 'Cancelled',
+    default      => ucfirst($s),
+};
+?>
+
 <h4 class="mb-4">My Orders</h4>
 
 <?php if (empty($userOrderList)): ?>
@@ -9,7 +27,7 @@
 <?php else: ?>
     <div class="card">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
                         <th>Order #</th>
@@ -22,21 +40,17 @@
                 <tbody>
                     <?php foreach ($userOrderList as $order): ?>
                     <tr>
-                        <td>#<?= e($order['id']) ?></td>
+                        <td class="fw-semibold">#<?= e($order['id']) ?></td>
                         <td><?= formatPrice((float) $order['total_amount']) ?></td>
                         <td>
-                            <span class="badge bg-<?= match($order['status']) {
-                                'delivered' => 'success',
-                                'shipped'   => 'info',
-                                'confirmed' => 'primary',
-                                'cancelled' => 'danger',
-                                default     => 'secondary',
-                            } ?>"><?= e(ucfirst($order['status'])) ?></span>
+                            <span class="badge bg-<?= $statusBadge($order['status']) ?>">
+                                <?= $statusLabel($order['status']) ?>
+                            </span>
                         </td>
-                        <td><?= e(date('d M Y', strtotime($order['created_at']))) ?></td>
+                        <td class="text-muted small"><?= e(date('d M Y', strtotime($order['created_at']))) ?></td>
                         <td>
                             <a href="<?= url('/orders/' . $order['id']) ?>"
-                               class="btn btn-sm btn-outline-secondary">View</a>
+                               class="btn btn-sm btn-outline-secondary">Track</a>
                         </td>
                     </tr>
                     <?php endforeach; ?>

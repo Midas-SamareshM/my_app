@@ -312,6 +312,88 @@ class AdminController extends BaseController
         $this->redirectWithMessage('/admin/products', 'success', 'Product updated.');
     }
 
+    // -------------------------------------------------------
+    // Order management
+    // -------------------------------------------------------
+
+    /**
+     * List all orders, optionally filtered by status.
+     *
+     * @return void
+     */
+    public function listOrders(): void
+    {
+        $this->requireAdmin();
+
+        $statusFilter = $this->request->get('status', '');
+        $statusFilter = in_array($statusFilter, \App\Models\Order::ALLOWED_STATUSES, true)
+            ? $statusFilter
+            : null;
+
+        $this->render('admin/orders/index', [
+            'pageTitle'     => 'Manage Orders',
+            'orderList'     => $this->orderModel->getAllWithUsers($statusFilter),
+            'statusCounts'  => $this->orderModel->countsByStatus(),
+            'activeFilter'  => $statusFilter,
+            'allStatuses'   => \App\Models\Order::ALLOWED_STATUSES,
+        ]);
+    }
+
+    /**
+     * Show the detail page for a single order (admin view).
+     *
+     * @param  string  $orderId  Order ID from the route parameter.
+     *
+     * @return void
+     */
+    public function viewOrder(string $orderId): void
+    {
+        $this->requireAdmin();
+
+        $order = $this->orderModel->findWithUser((int) $orderId);
+
+        if ($order === null) {
+            $this->redirectWithMessage('/admin/orders', 'danger', 'Order not found.');
+        }
+
+        $this->render('admin/orders/show', [
+            'pageTitle'      => 'Order #' . $orderId,
+            'order'          => $order,
+            'orderLineItems' => $this->orderModel->getOrderItems((int) $orderId),
+            'allStatuses'    => \App\Models\Order::ALLOWED_STATUSES,
+        ]);
+    }
+
+    /**
+     * Update the status of an order via POST.
+     *
+     * @param  string  $orderId  Order ID from the route parameter.
+     *
+     * @return void
+     */
+    public function updateOrderStatus(string $orderId): void
+    {
+        $this->requireAdmin();
+        $this->requireValidCsrf();
+
+        $newStatus = (string) $this->request->post('status', '');
+
+        try {
+            $this->orderModel->updateStatus((int) $orderId, $newStatus);
+            $this->redirectWithMessage(
+                '/admin/orders/' . $orderId,
+                'success',
+                'Order status updated to "' . ucfirst($newStatus) . '".'
+            );
+        } catch (\InvalidArgumentException $statusException) {
+            $this->redirectWithMessage('/admin/orders/' . $orderId, 'danger', $statusException->getMessage());
+        }
+    }
+
+    // -------------------------------------------------------
+    // Product management
+    // -------------------------------------------------------
+
     /**
      * Delete a product and its uploaded image.
      *
