@@ -1,4 +1,8 @@
 {
+  "env": {
+    "GH_CONFIG_DIR": "C:\\xampp\\htdocs\\my_app\\.gh-config",
+    "GH": "C:\\xampp\\htdocs\\my_app\\.tools\\gh\\bin\\gh.exe"
+  },
   "hooks": {
     "PostToolUse": [
       {

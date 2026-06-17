@@ -1,3 +1,7 @@
+# GitHub CLI — local portable binary and config (not committed)
+.tools/
+.gh-config/
+
 # XAMPP / PHP
 *.log
 *.cache
