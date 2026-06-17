@@ -5,6 +5,11 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened]
 
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
 jobs:
   php-lint:
     name: PHP Syntax Check
