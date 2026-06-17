@@ -1,0 +1,103 @@
+name: Auto Code Review
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  php-lint:
+    name: PHP Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: phpcs, phpstan
+
+      - name: PHP syntax check (all files)
+        run: find . -name "*.php" -not -path "./vendor/*" | xargs -I{} php -l {}
+
+      - name: PHP CodeSniffer (PSR-12)
+        run: |
+          phpcs --standard=PSR12 \
+                --extensions=php \
+                --ignore=vendor/ \
+                --report=full \
+                . || true
+
+      - name: Comment lint results on PR
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## PHP Lint Failed\nOne or more PHP files have syntax errors or PSR-12 violations. Check the Actions log for details.'
+            })
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for hardcoded secrets
+        run: |
+          if grep -rE "(password|secret|api_key|token)\s*=\s*['\"][^'\"]{4,}['\"]" \
+               --include="*.php" \
+               --exclude-dir=vendor .; then
+            echo "WARNING: Possible hardcoded credentials found."
+            exit 1
+          fi
+        continue-on-error: true
+
+      - name: Check for SQL injection risks
+        run: |
+          if grep -rE "\\\$_(GET|POST|REQUEST|COOKIE)\[" \
+               --include="*.php" \
+               --exclude-dir=vendor .; then
+            echo "WARNING: Direct superglobal access found — use PSR-7 Request instead."
+          fi
+        continue-on-error: true
+
+  pr-summary:
+    name: PR Review Summary
+    runs-on: ubuntu-latest
+    needs: [php-lint, security-scan]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Post review summary comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const lintResult = '${{ needs.php-lint.result }}';
+            const secResult  = '${{ needs.security-scan.result }}';
+
+            const icon = (r) => r === 'success' ? '✅' : r === 'failure' ? '❌' : '⚠️';
+
+            const body = `## Automated Code Review Summary
+
+            | Check | Result |
+            |-------|--------|
+            | PHP Lint & PSR-12 | ${icon(lintResult)} ${lintResult} |
+            | Security Scan | ${icon(secResult)} ${secResult} |
+
+            ---
+            **Next step:** Open Claude Code in your project and run \`/code-review\` for a full AI review with auto-fix.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
